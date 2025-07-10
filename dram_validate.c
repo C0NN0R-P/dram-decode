@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 		struct perf_event_attr pe = {0};
 		pe.type = 13; // PERF_TYPE_RAW
 		pe.size = sizeof(struct perf_event_attr);
-		pe.config = 0x304 // uncore_imc_0/cas_count_read
+		pe.config = 0x304; // uncore_imc_0/cas_count_read
 		pe.disabled = 0;
 		pe.exclude_kernel = 0;
 		pe.exclude_hv = 0;
