@@ -162,13 +162,6 @@ int main() {
         }
     }
 
-    printf("Best Rank: Delta %llu (event 0x%X, umask 0x%X) => Rank = %d\n",
-           (unsigned long long)best_rank.delta, best_rank.event, best_rank.umask,
-           best_rank.event - 0xB0);
-    printf("Best Bank: Delta %llu (event 0x%X, umask 0x%X) => Bank = %d\n",
-           (unsigned long long)best_bank.delta, best_bank.event, best_bank.umask,
-           best_bank.umask);
-
     munmap(addr, page_size);
     return 0;
 }
