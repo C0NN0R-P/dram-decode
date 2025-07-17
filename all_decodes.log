@@ -1,0 +1,3 @@
+[332545.220581] [skx_decode] skx_dram_decode_addr module unloaded.
+[332551.681911] [skx_decode] Loading skx_dram_decode_addr module...
+[332551.704354] [skx_decode] phys = 0x27a0d3000 => socket=0 imc=0 channel=0 dimm=0 rank=0 row=0x19c3 col=0x7c0 bank=2 bg=0

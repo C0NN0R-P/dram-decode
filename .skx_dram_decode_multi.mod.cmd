@@ -1,0 +1,1 @@
+cmd_/home/cim/pgr/pmai286/dram-decode/skx_dram_decode_multi.mod := { echo  /home/cim/pgr/pmai286/dram-decode/skx_dram_decode_multi.o;  echo; } > /home/cim/pgr/pmai286/dram-decode/skx_dram_decode_multi.mod

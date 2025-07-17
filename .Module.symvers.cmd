@@ -1,0 +1,1 @@
+cmd_/home/cim/pgr/pmai286/dram-decode/Module.symvers := sed 's/\.ko$$/\.o/' /home/cim/pgr/pmai286/dram-decode/modules.order | scripts/mod/modpost -m -a  -o /home/cim/pgr/pmai286/dram-decode/Module.symvers -e -i Module.symvers   -T -

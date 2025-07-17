@@ -1,0 +1,1 @@
+cmd_/home/cim/pgr/pmai286/dram-decode/skx_dram_decode_multi.ko := ld -r -m elf_x86_64 -z noexecstack --build-id=sha1  -T scripts/module.lds -o /home/cim/pgr/pmai286/dram-decode/skx_dram_decode_multi.ko /home/cim/pgr/pmai286/dram-decode/skx_dram_decode_multi.o /home/cim/pgr/pmai286/dram-decode/skx_dram_decode_multi.mod.o;  true

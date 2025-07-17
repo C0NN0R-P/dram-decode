@@ -1,4 +1,5 @@
 #include <linux/module.h>
+#include <linux/moduleparam.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/mm.h>
@@ -70,11 +71,14 @@ static int __init skx_decode_init(void) {
 	res.addr = phys_addr;
 
 	if (real_skx_decode(&res)) {
-		pr_info("[skx_decode] phys = 0x%llx => socket=%d imc=%d channel=%d dimm=%d rank=%d row=0x%x col=0x%x bank=%d bg=%d\n",
+		pr_info("[skx_decode] phys = 0x%llx => socket=%d imc=%d channel=%d dimm=%d rank=%d row=0x%x col=0x%x bank=%d bg=%d chan_addr=0x%llx sktways=%d chanways=%d channel_rank=%d rank_addr=0x%llx\n",
 			(unsigned long long)res.addr,
 			res.socket, res.imc, res.channel,
 			res.dimm, res.rank, res.row, res.column,
-			res.bank_address, res.bank_group);
+			res.bank_address, res.bank_group,
+			(unsigned long long)res.chan_addr,
+			res.sktways, res.chanways, res.channel_rank,
+			(unsigned long long)res.rank_address);
 	} else {
 		pr_err("[skx_decode] Failed to decode physical address 0x%llx\n",
 		       (unsigned long long)phys_addr);
