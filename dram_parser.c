@@ -153,7 +153,7 @@ void run_kernel_decode(uint64_t pa, int *channel, int *rank, int *bank, int *bg,
                 if (*rank >= 0 && *rank < MAX_RANKS && *bank >= 0 && *bank < MAX_BANKS && *bg >= 0 && *bg < MAX_BANKGROUPS) {
                     calculated_bank = (*bank * 4) + *bg;
                 }
-                printf("Calculated bank = %d\n", calculated_bank);
+                // printf("Calculated bank = %d\n", calculated_bank);
             }
         }
     }
@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
                 uint64_t config = get_config("Rank", rank_idx, 0, &umask, &event);
                 delta = read_perf_event(pmu_type, config, addr, "Rank", umask, event, &delta);
                 if (delta >= DELTA_THRESHOLD) {
-                    printf("Delta (Rank, event 0x%X, umask 0x%X): %llu => Rank = %d, PMU type = %d\n", event, umask, (unsigned long long)delta, rank_idx, pmu_type);
+                    // printf("Delta (Rank, event 0x%X, umask 0x%X): %llu => Rank = %d, PMU type = %d\n", event, umask, (unsigned long long)delta, rank_idx, pmu_type);
                     rank_hits[rank_idx]++;
                 }
                 if (delta > best_rank.delta) {
@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
                     uint64_t config = get_config("Bank", rank_idx, bank_idx, &umask, &event);
                     delta = read_perf_event(pmu_type, config, addr, "Bank", umask, event, &delta);
                     if (delta >= DELTA_THRESHOLD) {
-                        printf("Delta (Bank, event 0x%X, umask 0x%X): %llu => Rank = %d, Bank = %d, PMU type = %d\n", event, umask, (unsigned long long)delta, rank_idx, umask, pmu_type);
+                        // printf("Delta (Bank, event 0x%X, umask 0x%X): %llu => Rank = %d, Bank = %d, PMU type = %d\n", event, umask, (unsigned long long)delta, rank_idx, umask, pmu_type);
                         bank_hits[rank_idx][bank_idx]++;
                     }
                     if (delta > best_bank.delta) {
@@ -239,7 +239,7 @@ int main(int argc, char **argv) {
                     uint64_t config = get_config("BankGroup", rank_idx, bg_idx, &umask, &event);
                     uint64_t delta = read_perf_event(pmu_type, config, addr, "BankGroup", umask, event, &delta);
                     if (delta >= DELTA_THRESHOLD) {
-                        printf("Delta (BankGroup, event 0x%X, umask 0x%X): %llu => Rank = %d, Bank Group = %d, PMU type = %d\n", event, umask, (unsigned long long)delta, rank_idx, bg_idx, pmu_type);
+                        // printf("Delta (BankGroup, event 0x%X, umask 0x%X): %llu => Rank = %d, Bank Group = %d, PMU type = %d\n", event, umask, (unsigned long long)delta, rank_idx, bg_idx, pmu_type);
                         bankgroup_hits[rank_idx][bg_idx]++;
                     }
                     if (delta > best_bankgroup.delta) {
@@ -249,47 +249,10 @@ int main(int argc, char **argv) {
             }
 
             if (best_rank.delta >= DELTA_THRESHOLD || best_bank.delta >= DELTA_THRESHOLD || best_bankgroup.delta >= DELTA_THRESHOLD) {
-                printf("Best Rank: Delta %llu (event 0x%X, umask 0x%X) => Rank = %d\n", (unsigned long long)best_rank.delta, best_rank.event, best_rank.umask, best_rank.event - 0xB0);
-                printf("Best Bank: Delta %llu (event 0x%X, umask 0x%X) => Bank = %d\n", (unsigned long long)best_bank.delta, best_bank.event, best_bank.umask, best_bank.umask);
-                printf("Best BankGroup: Delta %llu (event 0x%X, umask 0x%X) => Bank Group = %d\n", (unsigned long long)best_bankgroup.delta, best_bankgroup.event, best_bankgroup.umask, best_bankgroup.umask - 0x10 - 1);
-            } else {
-                printf("No results over delta threshold found\n");
-            }
-        }
-    }
-
-    printf("\n--- TOTAL PERF COUNTER HIT SUMMARY ---\n");
-    for (int r = 0; r < MAX_RANKS; r++) {
-        if (rank_hits[r] > 0) {
-            printf("Total Rank %d Hits: %d\n", r, rank_hits[r]);
-        }
-    }
-    for (int r = 0; r < MAX_RANKS; r++) {
-        for (int b = 0; b < MAX_BANKS; b++) {
-            if (bank_hits[r][b] > 0) {
-                printf("Total Rank %d Bank %d Hits: %d\n", r, b, bank_hits[r][b]);
-            }
-        }
-    }
-
-    for (int r = 0; r < MAX_RANKS; r++) {
-        for (int bg = 0; bg < MAX_BANKGROUPS; bg++) {
-            if (bankgroup_hits[r][bg] > 0) {
-                printf("Total Rank %d BankGroup %d Hits: %d\n", r, bg, bankgroup_hits[r][bg]);
-            }
-        }
-    }
-
-    printf("\n--- TOTAL KPROBE HIT SUMMARY ---\n");
-    for (int r = 0; r < MAX_RANKS; r++) {
-        if (kprobe_rank_hits[r] > 0) {
-            printf("Kprobe Total Rank %d Hits: %d\n", r, kprobe_rank_hits[r]);
-        }
-    }
-    for (int r = 0; r < MAX_RANKS; r++) {
-        for (int b = 0; b < MAX_BANKS; b++) {
-            if (kprobe_bank_hits[r][b] > 0) {
-                printf("Kprobe Total Rank %d Bank %d Hits: %d\n", r, b, kprobe_bank_hits[r][b]);
+               // printf("Best Rank: Delta %llu (event 0x%X, umask 0x%X) => Rank = %d\n", (unsigned long long)best_rank.delta, best_rank.event, best_rank.umask, best_rank.event - 0xB0);
+               // printf("Best Bank: Delta %llu (event 0x%X, umask 0x%X) => Bank = %d\n", (unsigned long long)best_bank.delta, best_bank.event, best_bank.umask, best_bank.umask);
+               // printf("Best BankGroup: Delta %llu (event 0x%X, umask 0x%X) => Bank Group = %d\n", (unsigned long long)best_bankgroup.delta, best_bankgroup.event, best_bankgroup.umask, best_bankgroup.umask - 0x10 - 1);
+		printf("PMU type = %d Rank = %d Bank = %d BankGroup = %d\n", pmu_type, best_rank.event - 0xB0, best_bank.umask, best_bankgroup.umask - 0x10 - 1);
             }
         }
     }
