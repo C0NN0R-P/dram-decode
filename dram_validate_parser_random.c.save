@@ -15,10 +15,10 @@
 #define NUM_ACCESSES 5000
 #define MAX_RANKS 8
 #define MAX_BANKS 16
-#define MAX_BANKGROUPS 4
+#define MAX_BGS 4
 #define DELTA_THRESHOLD 500
 #define HUGE_ALLOC_SIZE (8L * 1024 * 1024 * 1024) // 8GB
-#define STRIDE_SIZE (1 * 512) 
+#define STRIDE_SIZE (1 * 512) // 64KB
 
 static long perf_event_open(struct perf_event_attr *hw_event, pid_t pid, int cpu, int group_fd, unsigned long flags) {
     return syscall(__NR_perf_event_open, hw_event, pid, cpu, group_fd, flags);
@@ -103,10 +103,8 @@ uint64_t get_config(const char *label, int rank, int bank, int *umask, int *even
     } else if (strcmp(label, "Bank") == 0) {
         *event = 0xB0 + rank;
         *umask = bank;
-    } else if (strcmp(label, "BankGroup") == 0) {
-        *event = 0xB0 + rank;
-        *umask = 0x10 + (bank + 1); // bank is treated as bankgroup here
-    } else {
+    } else if (strcmp(
+else {
         *event = 0;
         *umask = 0;
     }
@@ -174,7 +172,6 @@ int main(int argc, char **argv) {
 
     int rank_hits[MAX_RANKS] = {0};
     int bank_hits[MAX_RANKS][MAX_BANKS] = {0};
-    int bankgroup_hits[MAX_RANKS][MAX_BANKGROUPS] = {0};
     int kprobe_rank_hits[MAX_RANKS] = {0};
     int kprobe_bank_hits[MAX_RANKS][MAX_BANKS] = {0};
 
@@ -191,7 +188,7 @@ int main(int argc, char **argv) {
         int channel, rank, bank, bg;
         run_kernel_decode(phys_addr, &channel, &rank, &bank, &bg, kprobe_rank_hits, kprobe_bank_hits);
 
-        Result best_rank = {0}, best_bank = {0}, best_bankgroup = {0};
+        Result best_rank = {0}, best_bank = {0}, best_bg = {0};
 
         for (int rank_idx = 0; rank_idx < MAX_RANKS; rank_idx++) {
             int umask = 0, event = 0;
@@ -224,24 +221,14 @@ int main(int argc, char **argv) {
         }
 
         for (int rank_idx = 0; rank_idx < MAX_RANKS; rank_idx++) {
-            for (int bg_idx = 0; bg_idx < 4; bg_idx++) {
-                int umask = 0, event = 0;
-                uint64_t config = get_config("BankGroup", rank_idx, bg_idx, &umask, &event);
-                uint64_t delta = read_perf_event(13, config, addr, "BankGroup", umask, event, &delta);
-                if (delta >= DELTA_THRESHOLD) {
-                    printf("Delta (BankGroup, event 0x%X, umask 0x%X): %llu => Rank = %d, Bank Group = %d\n", event, umask, (unsigned long long)delta, rank_idx, bg_idx);
-                    bankgroup_hits[rank_idx][bg_idx]++;
-                }
-                if (delta > best_bankgroup.delta) {
-                    best_bankgroup = (Result){"BankGroup", event, umask, delta};
-                }
-            }
-        }
+            for (int bg_idx = 0; bg_idx < MAX_BGS; bg_idx++) {
+                int umask = 0x10 + (bg_idx + 1);
+                int event = 0xB0 + rank_idx;
+                uint64_t delta;
+                uint64_t config = ((uint64_t)umask << 8) 
 
         printf("Best Rank: Delta %llu (event 0x%X, umask 0x%X) => Rank = %d\n", (unsigned long long)best_rank.delta, best_rank.event, best_rank.umask, best_rank.event - 0xB0);
         printf("Best Bank: Delta %llu (event 0x%X, umask 0x%X) => Bank = %d\n", (unsigned long long)best_bank.delta, best_bank.event, best_bank.umask, best_bank.umask);
-        printf("Best BankGroup: Delta %llu (event 0x%X, umask 0x%X) => Bank Group = %d\n", (unsigned long long)best_bankgroup.delta, best_bankgroup.event, best_bankgroup.umask, best_bankgroup.umask - 0x10 - 1);
- 
     }
 
     printf("\n--- TOTAL PERF COUNTER HIT SUMMARY ---\n");
@@ -254,14 +241,6 @@ int main(int argc, char **argv) {
         for (int b = 0; b < MAX_BANKS; b++) {
             if (bank_hits[r][b] > 0) {
                 printf("Total Rank %d Bank %d Hits: %d\n", r, b, bank_hits[r][b]);
-            }
-        }
-    }
-
-    for (int r = 0; r < MAX_RANKS; r++) {
-        for (int bg = 0; bg < MAX_BANKGROUPS; bg++) {
-            if (bankgroup_hits[r][bg] > 0) {
-                printf("Total Rank %d BankGroup %d Hits: %d\n", r, bg, bankgroup_hits[r][bg]);
             }
         }
     }
