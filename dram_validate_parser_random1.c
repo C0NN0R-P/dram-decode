@@ -16,7 +16,7 @@
 #define MAX_RANKS 8
 #define MAX_BANKS 16
 #define MAX_BANKGROUPS 4
-#define DELTA_THRESHOLD 1500
+#define DELTA_THRESHOLD 500
 #define HUGE_ALLOC_SIZE (8L * 1024 * 1024 * 1024) // 8GB
 #define STRIDE_SIZE (1 * 512) 
 
@@ -113,10 +113,9 @@ uint64_t get_config(const char *label, int rank, int bank, int *umask, int *even
     return ((uint64_t)(*umask) << 8) | *event;
 }
 
-void run_kernel_decode(uint64_t pa, int *channel, int *rank, int *bank, int *bg, int kprobe_rank_hits[MAX_RANKS], int kprobe_bank_hits[MAX_RANKS][MAX_BANKS], int kprobe_bg_hits[MAX_RANKS][MAX_BANKGROUPS]) {
+void run_kernel_decode(uint64_t pa, int *channel, int *rank, int *bank, int *bg, int kprobe_rank_hits[MAX_RANKS], int kprobe_bank_hits[MAX_RANKS][MAX_BANKS]) {
     char command[512];
     char buffer[512];
-    int calculated_bank = 0;
     FILE *fp;
 
     system("sudo dmesg -C");
@@ -144,16 +143,10 @@ void run_kernel_decode(uint64_t pa, int *channel, int *rank, int *bank, int *bg,
                 if (*rank >= 0 && *rank < MAX_RANKS) {
                     kprobe_rank_hits[*rank]++;
                 }
-                if (*rank >= 0 && *rank < MAX_RANKS && *bank >= 0 && *bank < MAX_BANKS) {
-                    kprobe_bank_hits[*rank][*bank]++;
+                int true_bank = (*bg * 4) + *bank;
+                if (*rank >= 0 && *rank < MAX_RANKS && true_bank >= 0 && true_bank < MAX_BANKS) {
+                    kprobe_bank_hits[*rank][true_bank]++;
                 }
-                if (*rank >= 0 && *rank < MAX_RANKS && *bg >= 0 && *bg < MAX_BANKGROUPS) {
-                    kprobe_bg_hits[*rank][*bg]++;
-                }
-                if (*rank >= 0 && *rank < MAX_RANKS && *bank >= 0 && *bank < MAX_BANKS && *bg >= 0 && *bg < MAX_BANKGROUPS) {
-                    calculated_bank = (*bank * 4) + *bg;
-                }
-                printf("Calculated bank = %d\n", calculated_bank);
             }
         }
     }
@@ -185,7 +178,6 @@ int main(int argc, char **argv) {
     int bankgroup_hits[MAX_RANKS][MAX_BANKGROUPS] = {0};
     int kprobe_rank_hits[MAX_RANKS] = {0};
     int kprobe_bank_hits[MAX_RANKS][MAX_BANKS] = {0};
-    int kprobe_bg_hits[MAX_RANKS][MAX_BANKGROUPS] = {0};
 
     for (int i = 0; i < num_pages; i++) {
         uintptr_t random_offset = ((uintptr_t)rand() << 16) ^ rand();
@@ -198,7 +190,7 @@ int main(int argc, char **argv) {
         printf("PA: 0x%llx\n", (unsigned long long)phys_addr);
 
         int channel, rank, bank, bg;
-        run_kernel_decode(phys_addr, &channel, &rank, &bank, &bg, kprobe_rank_hits, kprobe_bank_hits, kprobe_bg_hits);
+        run_kernel_decode(phys_addr, &channel, &rank, &bank, &bg, kprobe_rank_hits, kprobe_bank_hits);
 
         Result best_rank = {0}, best_bank = {0}, best_bankgroup = {0};
 
@@ -247,13 +239,9 @@ int main(int argc, char **argv) {
             }
         }
 
-        if (best_rank.delta >= DELTA_THRESHOLD || best_bank.delta >= DELTA_THRESHOLD || best_bankgroup.delta >= DELTA_THRESHOLD) {
-            printf("Best Rank: Delta %llu (event 0x%X, umask 0x%X) => Rank = %d\n", (unsigned long long)best_rank.delta, best_rank.event, best_rank.umask, best_rank.event - 0xB0);
-            printf("Best Bank: Delta %llu (event 0x%X, umask 0x%X) => Bank = %d\n", (unsigned long long)best_bank.delta, best_bank.event, best_bank.umask, best_bank.umask);
-            printf("Best BankGroup: Delta %llu (event 0x%X, umask 0x%X) => Bank Group = %d\n", (unsigned long long)best_bankgroup.delta, best_bankgroup.event, best_bankgroup.umask, best_bankgroup.umask - 0x10 - 1);
-        } else {
-            printf("No results over delta threshold found\n");
-        }
+        printf("Best Rank: Delta %llu (event 0x%X, umask 0x%X) => Rank = %d\n", (unsigned long long)best_rank.delta, best_rank.event, best_rank.umask, best_rank.event - 0xB0);
+        printf("Best Bank: Delta %llu (event 0x%X, umask 0x%X) => Bank = %d\n", (unsigned long long)best_bank.delta, best_bank.event, best_bank.umask, best_bank.umask);
+        printf("Best BankGroup: Delta %llu (event 0x%X, umask 0x%X) => Bank Group = %d\n", (unsigned long long)best_bankgroup.delta, best_bankgroup.event, best_bankgroup.umask, best_bankgroup.umask - 0x10 - 1);
     }
 
     printf("\n--- TOTAL PERF COUNTER HIT SUMMARY ---\n");
@@ -269,7 +257,6 @@ int main(int argc, char **argv) {
             }
         }
     }
-
     for (int r = 0; r < MAX_RANKS; r++) {
         for (int bg = 0; bg < MAX_BANKGROUPS; bg++) {
             if (bankgroup_hits[r][bg] > 0) {
