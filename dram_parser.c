@@ -187,6 +187,13 @@ int main(int argc, char **argv) {
     int kprobe_bank_hits[MAX_RANKS][MAX_BANKS] = {0};
     int kprobe_bg_hits[MAX_RANKS][MAX_BANKGROUPS] = {0};
 
+    FILE *csv = fopen("dram_output.csv", "w");
+    if (!csv) {
+        perror("Failed to open CSV file");
+        return 1;
+    }
+    fprintf(csv, "VA,PA,PMU_Type,Rank,Bank,BankGroup\n");
+
     for (int i = 0; i < num_pages; i++) {
         uintptr_t random_offset = ((uintptr_t)rand() << 16) ^ rand();
         random_offset = (random_offset % (HUGE_ALLOC_SIZE / STRIDE_SIZE)) * STRIDE_SIZE;
@@ -253,10 +260,12 @@ int main(int argc, char **argv) {
                // printf("Best Bank: Delta %llu (event 0x%X, umask 0x%X) => Bank = %d\n", (unsigned long long)best_bank.delta, best_bank.event, best_bank.umask, best_bank.umask);
                // printf("Best BankGroup: Delta %llu (event 0x%X, umask 0x%X) => Bank Group = %d\n", (unsigned long long)best_bankgroup.delta, best_bankgroup.event, best_bankgroup.umask, best_bankgroup.umask - 0x10 - 1);
 		printf("PMU type = %d Rank = %d Bank = %d BankGroup = %d\n", pmu_type, best_rank.event - 0xB0, best_bank.umask, best_bankgroup.umask - 0x10 - 1);
+                fprintf(csv, "%p,0x%llx,%d,%d,%d,%d\n", addr, (unsigned long long)phys_addr, pmu_type, best_rank.event - 0xB0, best_bank.umask, best_bankgroup.umask - 0x10 - 1);
             }
         }
     }
 
+    fclose(csv);
     munmap(huge_block, HUGE_ALLOC_SIZE);
     return 0;
 }
